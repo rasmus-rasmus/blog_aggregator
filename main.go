@@ -1,62 +1,20 @@
 package main
 
 import (
+	"blog_aggregator/handlers"
 	"blog_aggregator/internal/database"
-	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
 )
-
-type apiConfig struct {
-	DB *database.Queries
-}
-
-func readinessHandler(w http.ResponseWriter, r *http.Request) {
-	responseBody := struct {
-		Status string `json:"status"`
-	}{"ok"}
-	respondWithJSON(w, 200, responseBody)
-}
-
-func errorHandler(w http.ResponseWriter, r *http.Request) {
-	respondWithError(w, 500, "Internal Server Error")
-}
-
-func (conf *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	reqBody := struct {
-		Name string `json:"name"`
-	}{}
-	decoderErr := decoder.Decode(&reqBody)
-	if decoderErr != nil {
-		respondWithError(w, 500, decoderErr.Error())
-		return
-	}
-	ctx := context.Background()
-	user, createUserErr := conf.DB.CreateUser(ctx, database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-		Name:      reqBody.Name,
-	})
-	if createUserErr != nil {
-		respondWithError(w, 500, decoderErr.Error())
-		return
-	}
-	respondWithJSON(w, 201, user)
-}
 
 func main() {
 	godotenv.Load()
@@ -67,7 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	conf := apiConfig{database.New(db)}
+	conf := handlers.ApiConfig{DB: database.New(db)}
 
 	mainRouter := chi.NewRouter()
 	mainRouter.Use(cors.Handler(cors.Options{
@@ -81,9 +39,10 @@ func main() {
 
 	apiRouter := chi.NewRouter()
 
-	apiRouter.Get("/readiness", readinessHandler)
-	apiRouter.Get("/err", errorHandler)
-	apiRouter.Post("/users", conf.createUserHandler)
+	apiRouter.Get("/readiness", handlers.ReadinessHandler)
+	apiRouter.Get("/err", handlers.ErrorHandler)
+	apiRouter.Post("/users", conf.CreateUserHandler)
+	apiRouter.Get("/users", conf.GetUserByKeyHandler)
 
 	mainRouter.Mount("/v1/", apiRouter)
 
