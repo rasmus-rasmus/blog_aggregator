@@ -41,8 +41,9 @@ func main() {
 
 	apiRouter.Get("/readiness", handlers.ReadinessHandler)
 	apiRouter.Get("/err", handlers.ErrorHandler)
-	apiRouter.Post("/users", conf.CreateUserHandler)
-	apiRouter.Get("/users", conf.GetUserByKeyHandler)
+	apiRouter.Post("/users", conf.HandlerUsersPost)
+	apiRouter.Get("/users", conf.MiddlewareAuth(handlers.HandlerUsersGet))
+	apiRouter.Post("/feeds", conf.MiddlewareAuth(conf.HandlerFeedsPost))
 
 	mainRouter.Mount("/v1/", apiRouter)
 

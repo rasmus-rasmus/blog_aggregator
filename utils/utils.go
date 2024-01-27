@@ -28,3 +28,9 @@ func RespondWithError(w http.ResponseWriter, statusCode int, errorMessage string
 	}{errorMessage}
 	RespondWithJSON(w, statusCode, responseBody)
 }
+
+func DecodeRequestBody[T interface{}](r *http.Request, dataShape T) (T, error) {
+	decoder := json.NewDecoder(r.Body)
+	decoderErr := decoder.Decode(&dataShape)
+	return dataShape, decoderErr
+}
