@@ -41,9 +41,16 @@ func main() {
 
 	apiRouter.Get("/readiness", handlers.ReadinessHandler)
 	apiRouter.Get("/err", handlers.ErrorHandler)
+
 	apiRouter.Post("/users", conf.HandlerUsersPost)
 	apiRouter.Get("/users", conf.MiddlewareAuth(handlers.HandlerUsersGet))
+
 	apiRouter.Post("/feeds", conf.MiddlewareAuth(conf.HandlerFeedsPost))
+	apiRouter.Get("/feeds", conf.HandlerFeedsGet)
+
+	apiRouter.Post("/feed_follows", conf.MiddlewareAuth(conf.HandlerFeedFollowsPost))
+	apiRouter.Delete("/feed_follows/{feedFollowID}", conf.MiddlewareAuth(conf.HandlerFeedFollowsDelete))
+	apiRouter.Get("/feed_follows", conf.MiddlewareAuth(conf.HandlerFeedFollowsGet))
 
 	mainRouter.Mount("/v1/", apiRouter)
 
