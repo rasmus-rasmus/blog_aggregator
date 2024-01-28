@@ -30,7 +30,7 @@ func (conf *ApiConfig) HandlerFeedFollowsPost(w http.ResponseWriter, r *http.Req
 		utils.RespondWithError(w, 400, createErr.Error())
 		return
 	}
-	utils.RespondWithJSON(w, 201, feed_follow)
+	utils.RespondWithJSON(w, 201, databaseFollowToFollow(feed_follow))
 }
 
 func (conf *ApiConfig) HandlerFeedFollowsDelete(w http.ResponseWriter, r *http.Request, user database.User) {
@@ -44,14 +44,32 @@ func (conf *ApiConfig) HandlerFeedFollowsDelete(w http.ResponseWriter, r *http.R
 		utils.RespondWithError(w, 400, deleteErr.Error())
 		return
 	}
-	utils.RespondWithJSON(w, 200, feedFollow)
+	utils.RespondWithJSON(w, 200, databaseFollowToFollow(feedFollow))
 }
 
 func (conf *ApiConfig) HandlerFeedFollowsGet(w http.ResponseWriter, r *http.Request, user database.User) {
-	follows, err := conf.DB.GetFeedFollowsForUser(r.Context(), user.ID)
+	dbFollows, err := conf.DB.GetFeedFollowsForUser(r.Context(), user.ID)
 	if err != nil {
 		utils.RespondWithError(w, 500, err.Error())
 		return
 	}
+
+	follows := make([]FeedFollow, 0, len(dbFollows))
+	for _, dbFollow := range dbFollows {
+		follows = append(follows, databaseFollowToFollow(dbFollow))
+	}
+
 	utils.RespondWithJSON(w, 200, follows)
+}
+
+type FeedFollow struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	FeedID    uuid.UUID `json:"feed_id"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func databaseFollowToFollow(dbFollow database.FeedFollow) FeedFollow {
+	return FeedFollow{dbFollow.ID, dbFollow.CreatedAt, dbFollow.UpdatedAt, dbFollow.FeedID, dbFollow.UserID}
 }

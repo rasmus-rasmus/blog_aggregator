@@ -46,18 +46,40 @@ func (conf *ApiConfig) HandlerFeedsPost(w http.ResponseWriter, r *http.Request, 
 	}
 
 	responseBody := struct {
-		Feed       database.Feed       `json:"feed"`
-		FeedFollow database.FeedFollow `json:"feed_follow"`
-	}{feed, follow}
+		Feed       Feed       `json:"feed"`
+		FeedFollow FeedFollow `json:"feed_follow"`
+	}{databaseFeedToFeed(feed), databaseFollowToFollow(follow)}
 
 	utils.RespondWithJSON(w, 201, responseBody)
 }
 
 func (conf *ApiConfig) HandlerFeedsGet(w http.ResponseWriter, r *http.Request) {
-	feeds, err := conf.DB.GetFeeds(r.Context())
+	dbFeeds, err := conf.DB.GetFeeds(r.Context())
 	if err != nil {
 		utils.RespondWithError(w, 500, err.Error())
 		return
 	}
+	feeds := make([]Feed, 0, len(dbFeeds))
+	for _, dbFeed := range dbFeeds {
+		feeds = append(feeds, databaseFeedToFeed(dbFeed))
+	}
 	utils.RespondWithJSON(w, 200, feeds)
+}
+
+type Feed struct {
+	ID            uuid.UUID  `json:"id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	Name          string     `json:"name"`
+	Url           string     `json:"url"`
+	UserID        uuid.UUID  `json:"user_id"`
+	LastFetchedAt *time.Time `json:"last_fetched_at"`
+}
+
+func databaseFeedToFeed(dbFeed database.Feed) Feed {
+	var dbFeedTime *time.Time
+	if dbFeed.LastFetchedAt.Valid {
+		dbFeedTime = &dbFeed.LastFetchedAt.Time
+	}
+	return Feed{dbFeed.ID, dbFeed.CreatedAt, dbFeed.UpdatedAt, dbFeed.Name, dbFeed.Url, dbFeed.UserID, dbFeedTime}
 }
