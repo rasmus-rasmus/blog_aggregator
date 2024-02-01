@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -17,6 +18,7 @@ import (
 )
 
 func main() {
+
 	godotenv.Load()
 	port := os.Getenv("PORT")
 	databaseURL := os.Getenv("DB_URL")
@@ -26,6 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 	conf := handlers.ApiConfig{DB: database.New(db)}
+
+	go dataFetchingWorker(2, time.Second*10, &conf)
 
 	mainRouter := chi.NewRouter()
 	mainRouter.Use(cors.Handler(cors.Options{

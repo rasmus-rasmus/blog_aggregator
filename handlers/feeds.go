@@ -20,6 +20,12 @@ func (conf *ApiConfig) HandlerFeedsPost(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
+	_, fetchErr := http.Get(reqBody.Url)
+	if fetchErr != nil {
+		utils.RespondWithError(w, 400, "Invalid url")
+		return
+	}
+
 	feed, createFeedErr := conf.DB.CreateFeed(r.Context(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
