@@ -18,17 +18,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Post struct {
-	id           uuid.UUID
-	created_at   time.Time
-	updated_at   time.Time
-	title        *string
-	url          string
-	description  *string
-	published_at time.Time
-	feed_id      uuid.UUID
-}
-
 type Item struct {
 	Title   string `xml:"title"`
 	Link    string `xml:"link"`
@@ -38,14 +27,21 @@ type Item struct {
 }
 
 func parseTimeString(timestamp string) (time.Time, bool) {
-	parsedTime, err := time.Parse(timestamp, timestamp)
-	return parsedTime, err != nil
+	parsedTime, err := time.Parse(time.RFC1123Z, timestamp)
+	if err == nil {
+		return parsedTime, true
+	}
+	parsedTime, err = time.Parse(time.RFC1123, timestamp)
+	if err == nil {
+		return parsedTime, true
+	}
+	return time.Time{}, false
 }
 
 func writePostToDB(item Item, feedId uuid.UUID, conf *handlers.ApiConfig) (database.Post, error) {
 	parsedTime, success := parseTimeString(item.PubDate)
 	if !success {
-		return database.Post{}, errors.New("Couldn't parse pubDate")
+		return database.Post{}, errors.New(fmt.Sprintf("Couldn't parse pubDate: %s", item.PubDate))
 	}
 	createPostParams := database.CreatePostParams{
 		ID:          uuid.New(),

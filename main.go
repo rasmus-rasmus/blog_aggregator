@@ -29,7 +29,7 @@ func main() {
 	}
 	conf := handlers.ApiConfig{DB: database.New(db)}
 
-	go dataFetchingWorker(2, time.Second*10, &conf)
+	go dataFetchingWorker(2, time.Second*60, &conf)
 
 	mainRouter := chi.NewRouter()
 	mainRouter.Use(cors.Handler(cors.Options{
@@ -55,6 +55,8 @@ func main() {
 	apiRouter.Post("/feed_follows", conf.MiddlewareAuth(conf.HandlerFeedFollowsPost))
 	apiRouter.Delete("/feed_follows/{feedFollowID}", conf.MiddlewareAuth(conf.HandlerFeedFollowsDelete))
 	apiRouter.Get("/feed_follows", conf.MiddlewareAuth(conf.HandlerFeedFollowsGet))
+
+	apiRouter.Get("/posts", conf.MiddlewareAuth(conf.HandlerPostsGet))
 
 	mainRouter.Mount("/v1/", apiRouter)
 
